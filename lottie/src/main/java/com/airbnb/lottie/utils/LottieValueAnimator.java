@@ -1,6 +1,8 @@
 package com.airbnb.lottie.utils;
 
 import android.animation.ValueAnimator;
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.support.annotation.FloatRange;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
@@ -12,7 +14,7 @@ import com.airbnb.lottie.LottieComposition;
  * This is a slightly modified {@link ValueAnimator} that allows us to update start and end values
  * easily optimizing for the fact that we know that it's a value animator with 2 floats.
  */
-public class LottieValueAnimator extends BaseLottieAnimator implements Choreographer.FrameCallback {
+@TargetApi(Build.VERSION_CODES.JELLY_BEAN) public class LottieValueAnimator extends BaseLottieAnimator implements Choreographer.FrameCallback {
 
 
   private float speed = 1f;
@@ -40,6 +42,7 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
    * Returns the current value of the animation from 0 to 1 regardless
    * of the animation speed, direction, or min and max frames.
    */
+  @Override
   @FloatRange(from = 0f, to = 1f) public float getAnimatedValueAbsolute() {
     if (composition == null) {
       return 0;
@@ -67,7 +70,7 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     return composition == null ? 0 : (long) composition.getDuration();
   }
 
-  public float getFrame() {
+  @Override public float getFrame() {
     return frame;
   }
 
@@ -121,21 +124,21 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     return Utils.SECOND_IN_NANOS / composition.getFrameRate() / Math.abs(speed);
   }
 
-  public void clearComposition() {
+  @Override public void clearComposition() {
     this.composition = null;
     minFrame = Integer.MIN_VALUE;
     maxFrame = Integer.MAX_VALUE;
   }
 
-  public void setComposition(LottieComposition composition) {
+  @Override public void setComposition(LottieComposition composition) {
     // Because the initial composition is loaded async, the first min/max frame may be set
     boolean keepMinAndMaxFrames = this.composition == null;
     this.composition = composition;
 
     if (keepMinAndMaxFrames) {
       setMinAndMaxFrames(
-              (int) Math.max(this.minFrame, composition.getStartFrame()),
-              (int) Math.min(this.maxFrame, composition.getEndFrame())
+          (int) Math.max(this.minFrame, composition.getStartFrame()),
+          (int) Math.min(this.maxFrame, composition.getEndFrame())
       );
     } else {
       setMinAndMaxFrames((int) composition.getStartFrame(), (int) composition.getEndFrame());
@@ -144,7 +147,7 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     lastFrameTimeNs = System.nanoTime();
   }
 
-  public void setFrame(int frame) {
+  @Override public void setFrame(int frame) {
     if (this.frame == frame) {
       return;
     }
@@ -153,15 +156,15 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     notifyUpdate();
   }
 
-  public void setMinFrame(int minFrame) {
+  @Override public void setMinFrame(int minFrame) {
     setMinAndMaxFrames(minFrame, (int) maxFrame);
   }
 
-  public void setMaxFrame(int maxFrame) {
+  @Override public void setMaxFrame(int maxFrame) {
     setMinAndMaxFrames((int) minFrame, maxFrame);
   }
 
-  public void setMinAndMaxFrames(int minFrame, int maxFrame) {
+  @Override public void setMinAndMaxFrames(int minFrame, int maxFrame) {
     float compositionMinFrame = composition == null ? Float.MIN_VALUE : composition.getStartFrame();
     float compositionMaxFrame = composition == null ? Float.MAX_VALUE : composition.getEndFrame();
     this.minFrame = MiscUtils.clamp(minFrame, compositionMinFrame, compositionMaxFrame);
@@ -169,18 +172,18 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     setFrame((int) MiscUtils.clamp(frame, minFrame, maxFrame));
   }
 
-  public void reverseAnimationSpeed() {
+  @Override public void reverseAnimationSpeed() {
     setSpeed(-getSpeed());
   }
 
-  public void setSpeed(float speed) {
+  @Override public void setSpeed(float speed) {
     this.speed = speed;
   }
 
   /**
    * Returns the current speed. This will be affected by repeat mode REVERSE.
    */
-  public float getSpeed() {
+  @Override public float getSpeed() {
     return speed;
   }
 
@@ -192,7 +195,7 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     }
   }
 
-  public void playAnimation() {
+  @Override public void playAnimation() {
     notifyStart(isReversed());
     setFrame((int) (isReversed() ? getMaxFrame() : getMinFrame()));
     lastFrameTimeNs = System.nanoTime();
@@ -200,16 +203,16 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     postFrameCallback();
   }
 
-  public void endAnimation() {
+  @Override public void endAnimation() {
     removeFrameCallback();
     notifyEnd(isReversed());
   }
 
-  public void pauseAnimation() {
+  @Override public void pauseAnimation() {
     removeFrameCallback();
   }
 
-  public void resumeAnimation() {
+  @Override public void resumeAnimation() {
     postFrameCallback();
     lastFrameTimeNs = System.nanoTime();
     if (isReversed() && getFrame() == getMinFrame()) {
@@ -228,14 +231,14 @@ public class LottieValueAnimator extends BaseLottieAnimator implements Choreogra
     return getSpeed() < 0;
   }
 
-  public float getMinFrame() {
+  @Override public float getMinFrame() {
     if (composition == null) {
       return 0;
     }
     return minFrame == Integer.MIN_VALUE ? composition.getStartFrame() : minFrame;
   }
 
-  public float getMaxFrame() {
+  @Override public float getMaxFrame() {
     if (composition == null) {
       return 0;
     }

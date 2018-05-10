@@ -8,7 +8,7 @@ import android.os.Build;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-public abstract class BaseLottieAnimator extends ValueAnimator {
+public abstract class BaseLottieAnimator extends AbsLottieAnimator {
   private final Set<ValueAnimator.AnimatorUpdateListener> updateListeners = new CopyOnWriteArraySet<>();
   private final Set<AnimatorListener> listeners = new CopyOnWriteArraySet<>();
 

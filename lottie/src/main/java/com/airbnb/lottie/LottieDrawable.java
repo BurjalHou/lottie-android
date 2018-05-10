@@ -25,6 +25,8 @@ import com.airbnb.lottie.manager.ImageAssetManager;
 import com.airbnb.lottie.model.KeyPath;
 import com.airbnb.lottie.model.layer.CompositionLayer;
 import com.airbnb.lottie.parser.LayerParser;
+import com.airbnb.lottie.utils.AbsLottieAnimator;
+import com.airbnb.lottie.utils.LottieSanMR1ValueAnimator;
 import com.airbnb.lottie.utils.LottieValueAnimator;
 import com.airbnb.lottie.utils.MiscUtils;
 import com.airbnb.lottie.value.LottieFrameInfo;
@@ -59,7 +61,17 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   private final Matrix matrix = new Matrix();
   private LottieComposition composition;
-  private final LottieValueAnimator animator = new LottieValueAnimator();
+  private final AbsLottieAnimator animator;
+
+  {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+      // Bumped the minSdk to 16 to use Choreographer in the animator
+      animator = new LottieValueAnimator();
+    } else {
+      animator = new LottieSanMR1ValueAnimator();
+    }
+  }
+
   private float scale = 1f;
 
   private final Set<ColorFilterData> colorFilterData = new HashSet<>();
@@ -77,7 +89,8 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   @IntDef({RESTART, REVERSE})
   @Retention(RetentionPolicy.SOURCE)
-  public @interface RepeatMode {}
+  public @interface RepeatMode {
+  }
 
   /**
    * When the animation reaches the end and <code>repeatCount</code> is INFINITE
@@ -125,7 +138,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   /**
    * Enable this to get merge path support for devices running KitKat (19) and above.
-   *
+   * <p>
    * Merge paths currently don't work if the the operand shape is entirely contained within the
    * first shape. If you need to cut out one shape from another shape, use an even-odd fill type
    * instead of using merge paths.
@@ -149,15 +162,15 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * If you use image assets, you must explicitly specify the folder in assets/ in which they are
    * located because bodymovin uses the name filenames across all compositions (img_#).
    * Do NOT rename the images themselves.
-   *
+   * <p>
    * If your images are located in src/main/assets/airbnb_loader/ then call
    * `setImageAssetsFolder("airbnb_loader/");`.
-   *
-   *
+   * <p>
+   * <p>
    * If you use LottieDrawable directly, you MUST call {@link #recycleBitmaps()} when you
    * are done. Calling {@link #recycleBitmaps()} doesn't have to be final and {@link LottieDrawable}
    * will recreate the bitmaps if needed but they will leak if you don't recycle them.
-   *
+   * <p>
    * Be wary if you are using many images, however. Lottie is designed to work with vector shapes
    * from After Effects. If your images look like they could be represented with vector shapes,
    * see if it is possible to convert them to shape layers and re-export your animation. Check
@@ -174,10 +187,9 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   /**
    * If you have image assets and use {@link LottieDrawable} directly, you must call this yourself.
-   *
+   * <p>
    * Calling recycleBitmaps() doesn't have to be final and {@link LottieDrawable}
    * will recreate the bitmaps if needed but they will leak if you don't recycle them.
-   *
    */
   public void recycleBitmaps() {
     if (imageAssetManager != null) {
@@ -385,16 +397,16 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   /**
    * Sets the minimum progress that the animation will start from when playing or looping.
    */
-   public void setMinProgress(final float minProgress) {
-     if (composition == null) {
-       lazyCompositionTasks.add(new LazyCompositionTask() {
-         @Override public void run(LottieComposition composition) {
-           setMinProgress(minProgress);
-         }
-       });
-       return;
-     }
-   setMinFrame((int) MiscUtils.lerp(composition.getStartFrame(), composition.getEndFrame(), minProgress));
+  public void setMinProgress(final float minProgress) {
+    if (composition == null) {
+      lazyCompositionTasks.add(new LazyCompositionTask() {
+        @Override public void run(LottieComposition composition) {
+          setMinProgress(minProgress);
+        }
+      });
+      return;
+    }
+    setMinFrame((int) MiscUtils.lerp(composition.getStartFrame(), composition.getEndFrame(), minProgress));
   }
 
   /**
@@ -457,6 +469,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
 
   /**
    * Reverses the current animation speed. This does NOT play the animation.
+   *
    * @see #setSpeed(float)
    * @see #playAnimation()
    * @see #resumeAnimation()
@@ -541,7 +554,6 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   }
 
   /**
-   *
    * @see #setRepeatCount(int)
    */
   @Deprecated
@@ -557,7 +569,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * @param mode {@link #RESTART} or {@link #REVERSE}
    */
   public void setRepeatMode(@RepeatMode int mode) {
-      animator.setRepeatMode(mode);
+    animator.setRepeatMode(mode);
   }
 
   /**
@@ -606,12 +618,12 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   /**
    * Set the scale on the current composition. The only cost of this function is re-rendering the
    * current frame so you may call it frequent to scale something up or down.
-   *
+   * <p>
    * The smaller the animation is, the better the performance will be. You may find that scaling an
    * animation down then rendering it in a larger ImageView and letting ImageView scale it back up
    * with a scaleType such as centerInside will yield better performance with little perceivable
    * quality loss.
-   *
+   * <p>
    * You can also use a fixed view width/height in conjunction with the normal ImageView
    * scaleTypes centerCrop and centerInside.
    */
@@ -624,7 +636,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
    * Use this if you can't bundle images with your app. This may be useful if you download the
    * animations from the network or have the images saved to an SD Card. In that case, Lottie
    * will defer the loading of the bitmap to this delegate.
-   *
+   * <p>
    * Be wary if you are using many images, however. Lottie is designed to work with vector shapes
    * from After Effects. If your images look like they could be represented with vector shapes,
    * see if it is possible to convert them to shape layers and re-export your animation. Check
@@ -705,7 +717,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   /**
    * Takes a {@link KeyPath}, potentially with wildcards or globstars and resolve it to a list of
    * zero or more actual {@link KeyPath Keypaths} that exist in the current animation.
-   *
+   * <p>
    * If you want to set value callbacks for any of these values, it is recommend to use the
    * returned {@link KeyPath} objects because they will be internally resolved to their content
    * and won't trigger a tree walk of the animation contents when applied.
@@ -723,7 +735,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
   /**
    * Add an property callback for the specified {@link KeyPath}. This {@link KeyPath} can resolve
    * to multiple contents. In that case, the callbacks's value will apply to all of them.
-   *
+   * <p>
    * Internally, this will check if the {@link KeyPath} has already been resolved with
    * {@link #resolveKeyPath(KeyPath)} and will resolve it if it hasn't.
    */
@@ -787,7 +799,7 @@ public class LottieDrawable extends Drawable implements Drawable.Callback, Anima
     ImageAssetManager bm = getImageAssetManager();
     if (bm == null) {
       Log.w(L.TAG, "Cannot update bitmap. Most likely the drawable is not added to a View " +
-        "which prevents Lottie from getting a Context.");
+          "which prevents Lottie from getting a Context.");
       return null;
     }
     Bitmap ret = bm.updateBitmap(id, bitmap);

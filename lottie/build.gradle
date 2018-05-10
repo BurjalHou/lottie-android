@@ -7,10 +7,10 @@ android {
   resourcePrefix 'lottie_'
 
   defaultConfig {
-    minSdkVersion 16
+    minSdkVersion 14
     targetSdkVersion 27
     versionCode 100
-    versionName "2.5.4"
+    versionName "2.5.5"
   }
   lintOptions {
     abortOnError true
